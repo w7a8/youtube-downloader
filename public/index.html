@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube 视频下载器</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0f0f0f;
+  color: #f1f1f1;
+  min-height: 100vh;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+header {
+  text-align: center;
+  padding: 40px 0 20px;
+}
+header h1 {
+  font-size: 2rem;
+  background: linear-gradient(135deg, #ff0000, #ff4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+header p { color: #aaa; margin-top: 8px; }
+
+/* Input area */
+.input-area {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+.input-area input {
+  flex: 1;
+  padding: 14px 18px;
+  border: 2px solid #333;
+  border-radius: 12px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input-area input:focus { border-color: #ff0000; }
+.input-area button {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 12px;
+  background: #ff0000;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.input-area button:hover { background: #e60000; }
+.input-area button:active { transform: scale(0.97); }
+.input-area button:disabled {
+  background: #555;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 20px;
+  color: #aaa;
+}
+.loading.active { display: block; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid #333;
+  border-top-color: #ff0000;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error */
+.error {
+  display: none;
+  background: #3a0000;
+  border: 1px solid #ff0000;
+  color: #ff6b6b;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin: 10px 0;
+}
+.error.active { display: block; }
+
+/* Video info card */
+.video-info {
+  display: none;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 14px;
+  padding: 20px;
+  margin: 16px 0;
+}
+.video-info.active { display: flex; gap: 20px; }
+.video-info .thumbnail {
+  width: 200px;
+  min-width: 200px;
+  height: 112px;
+  border-radius: 8px;
+  background: #222;
+  overflow: hidden;
+}
+.video-info .thumbnail img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.video-info .details { flex: 1; }
+.video-info .details h2 {
+  font-size: 1.1rem;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.video-info .meta {
+  font-size: 0.85rem;
+  color: #888;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Format table */
+.format-section {
+  margin: 16px 0;
+}
+.format-section h3 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: #ccc;
+}
+.format-list {
+  display: grid;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.format-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.format-row:hover { background: #252525; border-color: #555; }
+.format-row.selected { background: #2a1010; border-color: #ff0000; }
+.format-row .quality-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #ff0000;
+  color: #fff;
+  min-width: 70px;
+  text-align: center;
+}
+.format-row .quality-badge.audio-only { background: #ff6600; }
+.format-row .format-detail {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+.format-row .format-size {
+  font-size: 0.85rem;
+  color: #888;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* Download button */
+.download-btn-area {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+  align-items: center;
+}
+.btn-download {
+  padding: 14px 36px;
+  border: none;
+  border-radius: 12px;
+  background: #ff0000;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-download:hover { background: #e60000; }
+.btn-download:disabled { background: #555; cursor: not-allowed; }
+.download-hint {
+  font-size: 0.85rem;
+  color: #ffaa00;
+}
+
+/* Progress bar */
+.progress-area {
+  display: none;
+  margin: 16px 0;
+}
+.progress-area.active { display: block; }
+.progress-bar {
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0000, #ff4444);
+  border-radius: 4px;
+  transition: width 0.3s;
+  width: 0%;
+}
+.progress-text {
+  font-size: 0.85rem;
+  color: #aaa;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Downloads section */
+.downloads-section {
+  margin-top: 30px;
+  border-top: 1px solid #333;
+  padding-top: 20px;
+}
+.downloads-section h3 { margin-bottom: 14px; font-size: 1rem; color: #ccc; }
+.file-list { display: grid; gap: 8px; }
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+.file-item .file-icon { font-size: 1.5rem; }
+.file-item .file-name {
+  flex: 1;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-item .file-size { color: #888; font-size: 0.85rem; }
+.file-item .file-action {
+  padding: 6px 14px;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: transparent;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.15s;
+}
+.file-item .file-action:hover { background: #333; }
+.file-item .file-action.delete { color: #ff6b6b; border-color: #ff6b6b; }
+.file-item .file-action.delete:hover { background: #3a0000; }
+.empty-files { color: #555; font-size: 0.9rem; text-align: center; padding: 20px; }
+
+@media (max-width: 600px) {
+  .input-area { flex-direction: column; }
+  .video-info.active { flex-direction: column; }
+  .video-info .thumbnail { width: 100%; height: auto; aspect-ratio: 16/9; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>▶ YouTube 视频下载器</h1>
+    <p>粘贴 YouTube 链接，选择画质，保存到本地</p>
+  </header>
+
+  <div class="input-area">
+    <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=...">
+    <button id="fetchBtn" onclick="fetchInfo()">获取视频信息</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div>正在获取视频信息...</div>
+  </div>
+  <div class="error" id="error"></div>
+  <div class="progress-area" id="progressArea">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text">
+      <span id="progressStatus"></span>
+      <span id="progressSpeed"></span>
+    </div>
+  </div>
+
+  <div class="video-info" id="videoInfo">
+    <div class="thumbnail">
+      <img id="videoThumb" src="" alt="">
+    </div>
+    <div class="details">
+      <h2 id="videoTitle"></h2>
+      <div class="meta">
+        <span id="videoDuration"></span>
+        <span id="videoUploader"></span>
+        <span id="videoViews"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="format-section" id="formatSection" style="display:none;">
+    <h3>选择下载画质</h3>
+    <div class="format-list" id="formatList"></div>
+    <div class="download-btn-area">
+      <button class="btn-download" id="downloadBtn" onclick="startDownload()" disabled>下载视频</button>
+      <span class="download-hint" id="downloadHint"></span>
+    </div>
+  </div>
+
+  <div class="downloads-section">
+    <h3>📁 已下载视频</h3>
+    <div class="file-list" id="fileList">
+      <div class="empty-files">暂无下载</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentInfo = null;
+let selectedFormat = null;
+let selectedFormatId = null;
+
+const $ = id => document.getElementById(id);
+const api = {
+  info: url => fetch(`/api/info?url=${encodeURIComponent(url)}`).then(r => r.json()),
+  download: (url, fmt) => fetch(`/api/download?url=${encodeURIComponent(url)}&format=${encodeURIComponent(fmt || '')}`).then(r => r.json()),
+  progress: id => fetch(`/api/progress/${id}`).then(r => r.json()),
+  files: () => fetch('/api/files').then(r => r.json()),
+  deleteFile: name => fetch(`/api/file/${encodeURIComponent(name)}`, { method: 'DELETE' }).then(r => r.json()),
+};
+
+function showError(msg) {
+  $('error').textContent = msg;
+  $('error').classList.add('active');
+}
+function hideError() { $('error').classList.remove('active'); }
+function showLoading() { $('loading').classList.add('active'); }
+function hideLoading() { $('loading').classList.remove('active'); }
+
+async function fetchInfo() {
+  const url = $('urlInput').value.trim();
+  if (!url) { showError('请输入 YouTube 链接'); return; }
+
+  hideError();
+  showLoading();
+  $('videoInfo').classList.remove('active');
+  $('formatSection').style.display = 'none';
+
+  try {
+    const info = await api.info(url);
+    if (info.error) { showError(info.error); hideLoading(); return; }
+    
+    currentInfo = info;
+    $('videoTitle').textContent = info.title;
+    $('videoDuration').textContent = '⏱ ' + info.durationString;
+    $('videoUploader').textContent = '👤 ' + (info.uploader || 'Unknown');
+    $('videoViews').textContent = '👁 ' + (info.viewCount ? info.viewCount.toLocaleString() : 'N/A');
+    $('videoThumb').src = info.thumbnail || '';
+    $('videoInfo').classList.add('active');
+
+    renderFormats(info.formats);
+    hideLoading();
+  } catch (e) {
+    showError('获取失败: ' + e.message);
+    hideLoading();
+  }
+}
+
+function renderFormats(formats) {
+  const list = $('formatList');
+  list.innerHTML = '';
+  selectedFormat = null;
+  selectedFormatId = null;
+  $('downloadBtn').disabled = true;
+  $('downloadHint').textContent = '';
+
+  if (!formats.length) {
+    list.innerHTML = '<div style="color:#888;padding:10px;">未找到可用格式</div>';
+    $('formatSection').style.display = 'block';
+    return;
+  }
+
+  // Pre-select best quality (first combined video+audio)
+  let bestIdx = formats.findIndex(f => f.hasVideo && f.hasAudio);
+  if (bestIdx === -1) bestIdx = 0;
+
+  formats.forEach((fmt, i) => {
+    const row = document.createElement('div');
+    row.className = 'format-row' + (i === bestIdx ? ' selected' : '');
+    
+    const badgeClass = !fmt.hasVideo ? ' audio-only' : '';
+    const qualityLabel = fmt.quality || (fmt.hasVideo ? 'Video' : 'Audio');
+
+    row.innerHTML = `
+      <span class="quality-badge${badgeClass}">${qualityLabel}</span>
+      <span class="format-detail">${fmt.ext.toUpperCase()} · ${fmt.note || ''}${fmt.fps ? ' · ' + fmt.fps + 'fps' : ''}${fmt.hasVideo && !fmt.hasAudio ? ' (仅视频)' : ''}${!fmt.hasVideo && fmt.hasAudio ? ' (仅音频)' : ''}${fmt.hasVideo && fmt.hasAudio ? ' (视频+音频)' : ''}</span>
+      <span class="format-size">${fmt.filesize}</span>
+    `;
+
+    if (i === bestIdx) {
+      selectedFormat = fmt;
+      selectedFormatId = fmt.id;
+    }
+
+    row.onclick = () => {
+      document.querySelectorAll('.format-row').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+      selectedFormat = fmt;
+      selectedFormatId = fmt.id;
+      $('downloadBtn').disabled = false;
+      if (!fmt.hasAudio && fmt.hasVideo) {
+        $('downloadHint').textContent = '⚠ 此格式无音轨，将自动合并最佳音轨';
+      } else {
+        $('downloadHint').textContent = '';
+      }
+    };
+
+    list.appendChild(row);
+  });
+
+  $('downloadBtn').disabled = false;
+  if (selectedFormat && !selectedFormat.hasAudio && selectedFormat.hasVideo) {
+    $('downloadHint').textContent = '⚠ 此格式无音轨，将自动合并最佳音轨';
+  }
+  $('formatSection').style.display = 'block';
+}
+
+async function startDownload() {
+  if (!currentInfo) return;
+  const url = $('urlInput').value.trim();
+  const fmtId = selectedFormatId;
+  
+  // If video-only format selected, use yt-dlp merge: bestvideo[format]+bestaudio
+  let formatArg = fmtId;
+  if (selectedFormat && selectedFormat.hasVideo && !selectedFormat.hasAudio) {
+    formatArg = fmtId + '+bestaudio';
+  }
+
+  $('downloadBtn').disabled = true;
+  $('downloadBtn').textContent = '下载中...';
+  $('progressArea').classList.add('active');
+  $('progressFill').style.width = '0%';
+  $('progressStatus').textContent = '正在启动下载...';
+  $('progressSpeed').textContent = '';
+
+  try {
+    const result = await api.download(url, formatArg);
+    if (result.error) {
+      showError(result.error);
+      $('downloadBtn').disabled = false;
+      $('downloadBtn').textContent = '下载视频';
+      $('progressArea').classList.remove('active');
+      return;
+    }
+
+    // Poll progress
+    const pollInterval = setInterval(async () => {
+      try {
+        const prog = await api.progress(result.downloadId);
+        $('progressFill').style.width = prog.progress + '%';
+        
+        if (prog.status === 'complete') {
+          clearInterval(pollInterval);
+          $('progressStatus').textContent = '✅ 下载完成: ' + prog.fileName;
+          $('progressSpeed').textContent = '';
+          $('downloadBtn').disabled = false;
+          $('downloadBtn').textContent = '下载视频';
+          loadFiles();
+        } else if (prog.status === 'error') {
+          clearInterval(pollInterval);
+          $('progressStatus').textContent = '❌ 下载失败: ' + (prog.error || '');
+          $('progressSpeed').textContent = '';
+          $('downloadBtn').disabled = false;
+          $('downloadBtn').textContent = '下载视频';
+        } else {
+          $('progressStatus').textContent = `下载中... ${prog.progress || 0}%`;
+          $('progressSpeed').textContent = prog.speed ? `${prog.speed} · ETA ${prog.eta}` : '';
+        }
+      } catch (e) {
+        clearInterval(pollInterval);
+      }
+    }, 1000);
+  } catch (e) {
+    showError('下载失败: ' + e.message);
+    $('downloadBtn').disabled = false;
+    $('downloadBtn').textContent = '下载视频';
+    $('progressArea').classList.remove('active');
+  }
+}
+
+async function loadFiles() {
+  try {
+    const files = await api.files();
+    const list = $('fileList');
+    if (!files.length) {
+      list.innerHTML = '<div class="empty-files">暂无下载</div>';
+      return;
+    }
+    list.innerHTML = files.map(f => `
+      <div class="file-item">
+        <span class="file-icon">🎬</span>
+        <span class="file-name" title="${f.name}">${f.name}</span>
+        <span class="file-size">${f.size}</span>
+        <button class="file-action" onclick="openFile('${encodeURIComponent(f.name)}')">打开</button>
+        <button class="file-action delete" onclick="deleteFile('${encodeURIComponent(f.name)}')">删除</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load files:', e);
+  }
+}
+
+function openFile(name) {
+  window.open(`/api/file/${name}`, '_blank');
+}
+
+async function deleteFile(name) {
+  if (!confirm('确定要删除该文件吗?')) return;
+  try {
+    await api.deleteFile(name);
+    loadFiles();
+  } catch (e) {
+    showError('删除失败: ' + e.message);
+  }
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement === $('urlInput')) {
+    fetchInfo();
+  }
+});
+
+// Initial file load
+loadFiles();
+</script>
+</body>
+</html>
