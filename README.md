@@ -11,14 +11,24 @@
 - 📁 已下载文件管理（预览、删除）
 - 🎨 暗色主题 UI，YouTube 风格
 
+## 下载安装
+
+| 格式 | 下载 |
+|------|------|
+| DMG | [youtube-downloader-v0.1-mac.dmg](https://github.com/w7a8/youtube-downloader/releases/download/v0.1/youtube-downloader-v0.1-mac.dmg) |
+| ZIP | [youtube-downloader-v0.1-mac.zip](https://github.com/w7a8/youtube-downloader/releases/download/v0.1/youtube-downloader-v0.1-mac.zip) |
+
+下载 DMG 后打开，将 `YouTube Downloader.app` 拖入 `Applications` 文件夹即可。首次运行需在「系统设置 → 隐私与安全性」中允许打开。
+
 ## 环境要求
 
+- macOS 10.14+
 - [Node.js](https://nodejs.org/) (v16+)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (`brew install yt-dlp`)
 - [ffmpeg](https://ffmpeg.org/) (`brew install ffmpeg`)
 - Chrome 浏览器（用于 Cookie 认证）
 
-## 快速开始
+## 从源码运行
 
 ```bash
 # 安装依赖
@@ -30,6 +40,14 @@ npm start
 
 打开浏览器访问 `http://localhost:3000`，粘贴 YouTube 链接即可下载。
 
+## 构建 macOS 应用包
+
+```bash
+bash scripts/build-mac.sh
+```
+
+产物在 `dist/YouTube Downloader.app`，可直接双击运行。
+
 ## 项目文档
 
 - [需求文档](./REQUIREMENTS.md)
@@ -38,16 +56,3 @@ npm start
 ## 许可证
 
 MIT
-
-## macOS 打包
-
-```bash
-# 构建 .app 应用包
-bash scripts/build-mac.sh
-
-# 输出在 dist/YouTube Downloader.app
-# 双击即可运行，或拷贝到 /Applications
-open dist/YouTube\ Downloader.app
-```
-
-打包产物是一个标准的 macOS `.app` 应用，双击后自动启动本地服务并在浏览器中打开。
