@@ -38,3 +38,16 @@ npm start
 ## 许可证
 
 MIT
+
+## macOS 打包
+
+```bash
+# 构建 .app 应用包
+bash scripts/build-mac.sh
+
+# 输出在 dist/YouTube Downloader.app
+# 双击即可运行，或拷贝到 /Applications
+open dist/YouTube\ Downloader.app
+```
+
+打包产物是一个标准的 macOS `.app` 应用，双击后自动启动本地服务并在浏览器中打开。
