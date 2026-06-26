@@ -11,14 +11,6 @@
 - 📁 已下载文件管理（预览、删除）
 - 🎨 暗色主题 UI，YouTube 风格
 
-## 下载安装
-
-| 格式 | 下载 |
-|------|------|
-| DMG | [youtube-downloader-v0.1-mac.dmg](https://github.com/w7a8/youtube-downloader/releases/download/v0.1/youtube-downloader-v0.1-mac.dmg) |
-| ZIP | [youtube-downloader-v0.1-mac.zip](https://github.com/w7a8/youtube-downloader/releases/download/v0.1/youtube-downloader-v0.1-mac.zip) |
-
-下载 DMG 后打开，将 `YouTube Downloader.app` 拖入 `Applications` 文件夹即可。首次运行需在「系统设置 → 隐私与安全性」中允许打开。
 
 ## 环境要求
 
