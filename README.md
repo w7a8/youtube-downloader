@@ -12,6 +12,35 @@
 - 🎨 暗色主题 UI，YouTube 风格
 
 
+## 项目结构
+
+```
+youtube-downloader/
+├── server.js              # Express 后端服务
+├── public/
+│   └── index.html         # 前端页面（原生 JS + CSS）
+├── downloads/             # 视频下载目录
+├── scripts/
+│   └── build-mac.sh       # macOS .app 打包脚本
+├── package.json
+├── .gitignore
+├── REQUIREMENTS.md        # 需求文档
+├── DESIGN.md              # 设计文档
+└── README.md
+```
+
+## 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| 运行时 | Node.js |
+| Web 框架 | Express 4 |
+| 前端 | HTML5 + CSS3 + Vanilla JS |
+| 下载引擎 | yt-dlp (CLI) |
+| 合并工具 | ffmpeg |
+| 认证 | Chrome Cookies |
+| 打包 | Shell + macOS .app bundle |
+
 ## 环境要求
 
 - macOS 10.14+
